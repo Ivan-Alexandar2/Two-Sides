@@ -324,19 +324,5 @@ public class PlayerController : MonoBehaviour
             npc.isInBoat = true;
         }
     }
-
-    private void TryBoard응응응응(NPC npc)
-    {
-        TeleportBeacon freeBoatSeat = FindFreeBeacon(gameManager.BoatBeacons);
-
-        if (freeBoatSeat != null)
-        {
-            FreeUpBeacon(gameManager.RightBankBeacons, npc.gameObject);
-            FreeUpBeacon(gameManager.LeftBankBeacons, npc.gameObject);
-
-            Teleport(npc, freeBoatSeat);
-            npc.isInBoat = true;
-        }
-    }
     #endregion
 }

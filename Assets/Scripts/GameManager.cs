@@ -103,7 +103,7 @@ public class GameManager : MonoBehaviour
             if (isKiller)
             {
                 KillersInBoat++;
-                // Ако лодката е на десния бряг, пътниците се броят към десния бряг за условията на играта
+                // If the boat is on the right or left bank, boat passengers are counted towards that bank (game rules)
                 if (boat.isOnRightBank) KillersOnRightBank++;
                 else KillersOnLeftBank++;
             }
@@ -120,14 +120,14 @@ public class GameManager : MonoBehaviour
 
     private void CheckGameStatus()
     {
-        // Условие за победа: Всички са на левия бряг
+        // Win condition
         if (PeopleOnLeftBank == 3 && KillersOnLeftBank == 3)
         {
             EndGame("You win");
-            return; // Излизаме, за да не провери и за загуба
+            return;
         }
 
-        // Условие за загуба: Повече убийци от хора на някой бряг (ако има хора)
+        // Lose conditions
         bool rightBankLoss = (PeopleOnRightBank < KillersOnRightBank) && (PeopleOnRightBank > 0);
         bool leftBankLoss = (PeopleOnLeftBank < KillersOnLeftBank) && (PeopleOnLeftBank > 0);
 
