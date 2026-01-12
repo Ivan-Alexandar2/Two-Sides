@@ -12,6 +12,7 @@ public class NPC : MonoBehaviour, IInteractable
 
     private TeleportBeacon reservedSeat;
     private bool isBoarding = false;
+    public ParticleSystem poof;
 
     // Interface Implementation
     public string GetInteractionText() { return "Move NPC"; }
@@ -49,6 +50,7 @@ public class NPC : MonoBehaviour, IInteractable
 
     private void EnterBoat()
     {
+        poof.Play();
         isBoarding = false;
 
         // Disable NavMesh so we can manually snap them into the boat

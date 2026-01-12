@@ -56,6 +56,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private TextMeshProUGUI interactionText;
     public GameObject mainMenu;
     public GameObject settingsMenu;
+    public ParticleSystem poofEffectPrefab;
 
     void Start()
     {
@@ -290,10 +291,14 @@ public class PlayerController : MonoBehaviour
     // The teleportation execution
     private void Teleport(NPC npc, TeleportBeacon targetBeacon)
     {
+        Instantiate(poofEffectPrefab, npc.transform.position + Vector3.up, Quaternion.identity);
+
         npc.transform.position = targetBeacon.transform.position;
 
         targetBeacon.inhabitant = npc.gameObject;
         targetBeacon.isTaken = true;
+
+        Instantiate(poofEffectPrefab, npc.transform.position + Vector3.up, Quaternion.identity);
     }
 
     private void TryDisembark(NPC npc)

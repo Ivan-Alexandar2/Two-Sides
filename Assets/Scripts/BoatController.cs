@@ -14,6 +14,9 @@ public class BoatController : MonoBehaviour
     [SerializeField] private Vector3 endPosition;
     private float startTime;
 
+    public ParticleSystem wakeParticles;
+    public ParticleSystem foamParticles;
+
     private void Start()
     {
         startPosition = transform.position;
@@ -34,11 +37,17 @@ public class BoatController : MonoBehaviour
 
             transform.position = Vector3.Lerp(currentStart, currentEnd, progress);
 
+            if (!wakeParticles.isPlaying) wakeParticles.Play();
+            if (!foamParticles.isPlaying) foamParticles.Play();
+
             if (progress >= 1f)
             {
                 isMoving = false;
                 transform.position = currentEnd;
                 isOnRightBank = !isOnRightBank;
+
+                if (wakeParticles.isPlaying) wakeParticles.Stop();
+                if (foamParticles.isPlaying) foamParticles.Stop();
             }
         }
     }
