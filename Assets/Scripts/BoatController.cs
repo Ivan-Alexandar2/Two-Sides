@@ -17,6 +17,9 @@ public class BoatController : MonoBehaviour
     public ParticleSystem wakeParticles;
     public ParticleSystem foamParticles;
 
+    public AudioSource audioSource;
+    public AudioClip engineSound;
+
     private void Start()
     {
         startPosition = transform.position;
@@ -40,6 +43,8 @@ public class BoatController : MonoBehaviour
             if (!wakeParticles.isPlaying) wakeParticles.Play();
             if (!foamParticles.isPlaying) foamParticles.Play();
 
+            
+
             if (progress >= 1f)
             {
                 isMoving = false;
@@ -48,6 +53,7 @@ public class BoatController : MonoBehaviour
 
                 if (wakeParticles.isPlaying) wakeParticles.Stop();
                 if (foamParticles.isPlaying) foamParticles.Stop();
+                audioSource.Stop();
             }
         }
     }
@@ -56,6 +62,7 @@ public class BoatController : MonoBehaviour
     {
         if (!isMoving)
         {
+            audioSource.PlayOneShot(engineSound);
             isMoving = true;
             startTime = Time.time;
         }

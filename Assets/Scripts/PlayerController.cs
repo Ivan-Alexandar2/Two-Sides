@@ -56,7 +56,16 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private TextMeshProUGUI interactionText;
     public GameObject mainMenu;
     public GameObject settingsMenu;
+
     public ParticleSystem poofEffectPrefab;
+
+    [Header("Audio")]
+    public AudioSource audioSource;
+    public AudioClip[] poofSounds;
+    public AudioClip[] footstepSounds; 
+    public float walkStepInterval = 0.5f;
+    public float sprintStepInterval = 0.3f;
+    private float footstepTimer = 0f;
 
     void Start()
     {
@@ -88,6 +97,7 @@ public class PlayerController : MonoBehaviour
         HandleGravity();
 
         HandleInteraction();
+        HandleFootsteps();
     }
 
     #region MOVEMENT
@@ -124,15 +134,18 @@ public class PlayerController : MonoBehaviour
 
     void HandleGroundCheck()
     {
-        // Use CharacterController's built-in ground check as primary
-        isGrounded = controller.isGrounded;
+        // Cast from center of controller downward
+        Vector3 rayOrigin = transform.position;
+        float rayDistance = (controller.height / 2f) + 0.2f; // Extra margin
 
-        // Additional raycast check for more reliability
-        Vector3 spherePosition = transform.position + Vector3.down * (controller.height / 2f - controller.radius + groundCheckOffset);
-        bool raycastGrounded = Physics.CheckSphere(spherePosition, controller.radius - 0.05f, groundMask, QueryTriggerInteraction.Ignore);
+        // Do multiple checks for reliability
+        bool centerCheck = Physics.Raycast(rayOrigin, Vector3.down, rayDistance, groundMask, QueryTriggerInteraction.Ignore);
 
-        // Use both checks for better reliability
-        isGrounded = isGrounded || raycastGrounded;
+        // Sphere check as backup
+        Vector3 spherePosition = transform.position + Vector3.down * (controller.height / 2f - controller.radius);
+        bool sphereCheck = Physics.CheckSphere(spherePosition, controller.radius + 0.15f, groundMask, QueryTriggerInteraction.Ignore);
+
+        isGrounded = centerCheck || sphereCheck;
 
         // If grounded and moving downward, reset vertical velocity
         if (isGrounded && velocity.y < 0)
@@ -214,6 +227,44 @@ public class PlayerController : MonoBehaviour
     public bool IsGrounded() => isGrounded;
     public bool IsSprinting() => sprintInput && isGrounded;
     public float GetCurrentSpeed() => currentSpeed;
+
+    void HandleFootsteps()
+    {
+        if (!isGrounded)
+        {
+            footstepTimer = 0; // Reset when in air
+            return;
+        }
+
+        // Check if actually moving - use input as primary indicator
+        bool isMoving = (Mathf.Abs(horizontalInput) > 0.1f || Mathf.Abs(verticalInput) > 0.1f);
+
+        if (isMoving)
+        {
+            footstepTimer -= Time.deltaTime;
+
+            if (footstepTimer <= 0)
+            {
+                PlayRandomFootstep();
+                footstepTimer = sprintInput ? sprintStepInterval : walkStepInterval;
+            }
+        }
+        else
+        {
+            footstepTimer = 0;
+        }
+    }
+
+    void PlayRandomFootstep()
+    {
+        if (footstepSounds.Length == 0) return;
+
+        int index = Random.Range(0, footstepSounds.Length);
+
+        // slight volume variance for realism
+        float originalVolume = audioSource.volume;
+        audioSource.PlayOneShot(footstepSounds[index], originalVolume * Random.Range(0.02f, 0.05f));
+    }
     #endregion
 
     #region GAMEPLAY
@@ -252,11 +303,11 @@ public class PlayerController : MonoBehaviour
 
     public void MoveEntity(NPC objectToTeleport)
     {
-        if (objectToTeleport.isInBoat)
+        if (objectToTeleport.isInBoat && !boat.isMoving)
         {
             TryDisembark(objectToTeleport);
         }
-        else
+        else if (!objectToTeleport.isInBoat && !boat.isMoving)
         {
             TryBoard(objectToTeleport);
         }
@@ -291,14 +342,22 @@ public class PlayerController : MonoBehaviour
     // The teleportation execution
     private void Teleport(NPC npc, TeleportBeacon targetBeacon)
     {
-        Instantiate(poofEffectPrefab, npc.transform.position + Vector3.up, Quaternion.identity);
+        if(!boat.isMoving)
+        {
+            // particles
+            Instantiate(poofEffectPrefab, npc.transform.position + Vector3.up, Quaternion.identity);
 
-        npc.transform.position = targetBeacon.transform.position;
+            // audio
+            int index = Random.Range(0, poofSounds.Length);
+            audioSource.PlayOneShot(poofSounds[index]);
 
-        targetBeacon.inhabitant = npc.gameObject;
-        targetBeacon.isTaken = true;
+            npc.transform.position = targetBeacon.transform.position;
 
-        Instantiate(poofEffectPrefab, npc.transform.position + Vector3.up, Quaternion.identity);
+            targetBeacon.inhabitant = npc.gameObject;
+            targetBeacon.isTaken = true;
+
+            Instantiate(poofEffectPrefab, npc.transform.position + Vector3.up, Quaternion.identity);
+        }    
     }
 
     private void TryDisembark(NPC npc)
@@ -307,7 +366,7 @@ public class PlayerController : MonoBehaviour
 
         TeleportBeacon freeBeacon = FindFreeBeacon(targetBank);
 
-        if (freeBeacon != null)
+        if (freeBeacon != null && !boat.isMoving)
         {
             Teleport(npc, freeBeacon);
             npc.isInBoat = false;
@@ -318,9 +377,29 @@ public class PlayerController : MonoBehaviour
 
     private void TryBoard(NPC npc)
     {
+        // SECURITY CHECK: Is the boat on the same side as the NPC?
+        if (boat.isOnRightBank)
+        {
+            // Boat is Right -> NPC must be on Right Bank
+            if (!IsOnSpecificBank(npc, gameManager.RightBankBeacons))
+            {
+                Debug.Log("Cannot board: Boat is on Right Bank, but NPC is on Left!");
+                return; // STOP HERE
+            }
+        }
+        else
+        {
+            // Boat is Left -> NPC must be on Left Bank
+            if (!IsOnSpecificBank(npc, gameManager.LeftBankBeacons))
+            {
+                Debug.Log("Cannot board: Boat is on Left Bank, but NPC is on Right!");
+                return; // STOP HERE
+            }
+        }
+
         TeleportBeacon freeBoatSeat = FindFreeBeacon(gameManager.BoatBeacons);
 
-        if (freeBoatSeat != null)
+        if (freeBoatSeat != null && !boat.isMoving)
         {
             FreeUpBeacon(gameManager.RightBankBeacons, npc.gameObject);
             FreeUpBeacon(gameManager.LeftBankBeacons, npc.gameObject);
@@ -328,6 +407,18 @@ public class PlayerController : MonoBehaviour
             Teleport(npc, freeBoatSeat);
             npc.isInBoat = true;
         }
+    }
+
+    private bool IsOnSpecificBank(NPC npc, TeleportBeacon[] bankBeacons)
+    {
+        foreach (var beacon in bankBeacons)
+        {
+            if (beacon.inhabitant == npc.gameObject)
+            {
+                return true; // Found them on this bank
+            }
+        }
+        return false; // They are not here
     }
     #endregion
 }

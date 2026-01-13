@@ -4,6 +4,9 @@ using UnityEngine;
 
 public class Lever : MonoBehaviour, IInteractable
 {
+    public AudioSource audioSource;
+    public AudioClip leverPull;
+
     public string GetInteractionText()
     {
         return "Press E to pull Lever";
@@ -19,10 +22,12 @@ public class Lever : MonoBehaviour, IInteractable
         GameManager gm = FindObjectOfType<GameManager>();
         BoatController boat = FindObjectOfType<BoatController>();
 
-        // Логиката за пускане на лодката
+        audioSource.PlayOneShot(leverPull);
+
+        // Boat movement logic
         if (!boat.isMoving)
         {
-            // Проверка дали има шофьор
+            // Check if has driver
             bool hasDriver = false;
             foreach (var beacon in gm.BoatBeacons)
             {

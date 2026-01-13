@@ -14,6 +14,26 @@ public class NPC : MonoBehaviour, IInteractable
     private bool isBoarding = false;
     public ParticleSystem poof;
 
+    [Header("Audio Settings")]
+    public AudioSource audioSource;
+    public AudioClip[] villagerIdleSounds;
+    public AudioClip[] killerIdleSounds;
+
+    // Private timer variables
+    private float idleTimer = 0f;
+    private float timeUntilNextSound = 0f;
+    private bool hasPlayedSoundInCycle = false;
+    private const float CYCLE_DURATION = 15f;
+    void Update()
+    {
+        HandleIdleAudio();
+    }
+
+    void Start()
+    {
+        timeUntilNextSound = Random.Range(2f, CYCLE_DURATION - 1f);
+    }
+
     // Interface Implementation
     public string GetInteractionText() { return "Move NPC"; }
     public Color GetInteractionColor() { return Color.yellow; }
@@ -24,44 +44,54 @@ public class NPC : MonoBehaviour, IInteractable
         player.MoveEntity(this);
     }
 
-    // --- WALKING LOGIC CALLED BY PLAYER CONTROLLER ---
-    public void GoToBoat(Vector3 boardingPos, TeleportBeacon seat)
+    private void HandleIdleAudio()
     {
-        reservedSeat = seat;
+        // 1. Increase timer
+        idleTimer += Time.deltaTime;
 
-        agent.enabled = true;
-        agent.SetDestination(boardingPos);
-
-        isBoarding = true;
-        if (animator) animator.SetBool("isWalking", true);
-    }
-
-    private void Update()
-    {
-        if (isBoarding)
+        // 2. Check if it is time to play the sound
+        if (!hasPlayedSoundInCycle && idleTimer >= timeUntilNextSound)
         {
-            // Check if we have reached the edge of the dock
-            if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
-            {
-                EnterBoat();
-            }
+            PlayRandomIdleSound();
+            hasPlayedSoundInCycle = true; // Mark as done so it only plays once
+        }
+
+        // 3. Reset the cycle after 15 seconds
+        if (idleTimer >= CYCLE_DURATION)
+        {
+            idleTimer = 0f;
+            hasPlayedSoundInCycle = false;
+
+            // Pick a new random time for the next 15-second block
+            timeUntilNextSound = Random.Range(2f, CYCLE_DURATION - 1f);
         }
     }
 
-    private void EnterBoat()
+    private void PlayRandomIdleSound()
     {
-        poof.Play();
-        isBoarding = false;
+        // Determine which array to use based on components
+        AudioClip[] clipsToPlay = null;
 
-        // Disable NavMesh so we can manually snap them into the boat
-        agent.enabled = false;
-        if (animator) animator.SetBool("isWalking", false);
+        if (GetComponent<Killer>() != null)
+        {
+            clipsToPlay = killerIdleSounds;
+        }
+        else
+        {
+            clipsToPlay = villagerIdleSounds;
+        }
 
-        // Snap to the reserved seat
-        transform.position = reservedSeat.transform.position;
-        transform.parent = reservedSeat.transform;
+        // Safety check: Make sure there are sounds assigned!
+        if (clipsToPlay != null && clipsToPlay.Length > 0)
+        {
+            // Pick random sound
+            int index = Random.Range(0, clipsToPlay.Length);
 
-        // Finalize state
-        isInBoat = true;
+            // Randomize pitch slightly (0.9 to 1.1 is natural, 0.8 to 1.2 is crazier)
+            audioSource.pitch = Random.Range(0.9f, 1.1f);
+
+            // Play
+            audioSource.PlayOneShot(clipsToPlay[index]);
+        }
     }
 }
