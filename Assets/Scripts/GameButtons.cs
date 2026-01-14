@@ -15,6 +15,9 @@ public class GameButtons : MonoBehaviour
     [Header("Settings")]
     public float transitionDuration = 2.0f; // How long the move takes
     public GameObject menuUI; // The buttons/text to hide immediately
+    public GameObject pauseMenu;
+
+    [SerializeField] private GameManager gameManager;
 
     private void Start()
     {
@@ -27,7 +30,6 @@ public class GameButtons : MonoBehaviour
     public void RetryScene()
     {       
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-        StartCoroutine(TransitionToGame());
     }
 
     // Quit
@@ -40,7 +42,7 @@ public class GameButtons : MonoBehaviour
     // Start
     public void StartGame()
     {
-        StartCoroutine(TransitionToGame());
+        StartCoroutine(TransitionToGame());      
     }
 
     // Settings
@@ -53,6 +55,17 @@ public class GameButtons : MonoBehaviour
     public void Close()
     {
         playerController.settingsMenu.gameObject.SetActive(false);
+    }
+
+    // Return
+    public void Return()
+    {
+        pauseMenu.SetActive(false);
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
+        Time.timeScale = 1f;
     }
 
     private IEnumerator TransitionToGame()
@@ -100,7 +113,10 @@ public class GameButtons : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
 
-        // 6. Disable this Menu Manager object (optional)
-        gameObject.SetActive(false);
+        // 6. Start timer
+        gameManager.StartGame();
+
+        // 7. Disable this Menu Manager object (optional)
+        //gameObject.SetActive(false);
     }
 }

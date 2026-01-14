@@ -27,9 +27,16 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI loseText;
     [SerializeField] private TextMeshProUGUI winText;
 
+    [Header("Timer")]
+    public TextMeshProUGUI timerText;
+    private float elapsedTime;
+    private bool isGameActive = false;
+
     // new
     [SerializeField] private GameObject endGamePanel;
     [SerializeField] private TextMeshProUGUI endGameText;
+
+    [SerializeField] private GameButtons gameButtons;
 
     void Start()
     {
@@ -45,6 +52,12 @@ public class GameManager : MonoBehaviour
         CalculatePopulation();
         CheckGameStatus();
 
+        if (isGameActive)
+        {
+            elapsedTime += Time.deltaTime;
+            UpdateTimerUI();
+        }
+
         if (Input.GetKeyDown(KeyCode.T))
         {
             Cursor.lockState = CursorLockMode.None;
@@ -54,6 +67,17 @@ public class GameManager : MonoBehaviour
         {
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
+        }
+        if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Z))
+        {
+            // Flip the active state of the menu (if on -> off, if off -> on)
+            bool isMenuOpen = !gameButtons.pauseMenu.activeSelf;
+            gameButtons.pauseMenu.SetActive(isMenuOpen);
+
+            Cursor.lockState = isMenuOpen ? CursorLockMode.None : CursorLockMode.Locked;
+            Cursor.visible = isMenuOpen;
+
+            Time.timeScale = isMenuOpen ? 0f : 1f;
         }
     }
 
@@ -116,6 +140,22 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    void UpdateTimerUI()
+    {
+        // Math to turn seconds into "00:00" format
+        int minutes = Mathf.FloorToInt(elapsedTime / 60F);
+        int seconds = Mathf.FloorToInt(elapsedTime % 60F);
+        timerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
+    }
+
+    // Call this function from your PLAY BUTTON
+    public void StartGame()
+    {
+        elapsedTime = 0;
+        isGameActive = true;
+        timerText.color = Color.white; // Reset color just in case
+    }
+
     // EndGame Logic
 
     private void CheckGameStatus()
@@ -123,7 +163,7 @@ public class GameManager : MonoBehaviour
         // Win condition
         if (PeopleOnLeftBank == 3 && KillersOnLeftBank == 3)
         {
-            EndGame("You win");
+            EndGame("You Win!");
             return;
         }
 
@@ -139,11 +179,19 @@ public class GameManager : MonoBehaviour
 
     private void EndGame(string message)
     {
-        if (endGamePanel.activeSelf) return; // За да не се вика многократно
+        if (endGamePanel.activeSelf) return;
+
+        if (!isGameActive) return; // Prevent double winning
+
+        isGameActive = false;
+        
 
         endGamePanel.SetActive(true);
         endGameText.text = message;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+
+        if(message == "You Win!") timerText.color = Color.cyan;
+        if(message == "You Lose!") timerText.color = Color.red;
     }
 }
