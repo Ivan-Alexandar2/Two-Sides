@@ -29,7 +29,9 @@ public class GameManager : MonoBehaviour
 
     [Header("Timer")]
     public TextMeshProUGUI timerText;
+    public TextMeshProUGUI bestTimeText;
     private float elapsedTime;
+    private float bestTime;
     private bool isGameActive = false;
 
     // new
@@ -139,7 +141,7 @@ public class GameManager : MonoBehaviour
             }
         }
     }
-
+    #region TIMER
     void UpdateTimerUI()
     {
         // Math to turn seconds into "00:00" format
@@ -147,6 +149,49 @@ public class GameManager : MonoBehaviour
         int seconds = Mathf.FloorToInt(elapsedTime % 60F);
         timerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
     }
+
+    private void LoadBestTime()
+    {
+        // Load best time (default to 0 if not set)
+        bestTime = PlayerPrefs.GetFloat("BestTime", 0f);
+
+        // Update UI if you have a bestTimeText element
+        if (bestTimeText != null)
+        {
+            if (bestTime > 0)
+            {
+                int minutes = Mathf.FloorToInt(bestTime / 60F);
+                int seconds = Mathf.FloorToInt(bestTime % 60F);
+                bestTimeText.text = $"{minutes:00}:{seconds:00}";
+            }
+            else
+            {
+                bestTimeText.text = "Best: --:--";
+            }
+        }
+    }
+
+    private void SaveBestTime()
+    {
+        // Only save if it's a new best (lower time) or first completion
+        if (bestTime == 0 || elapsedTime < bestTime)
+        {
+            bestTime = elapsedTime;
+            PlayerPrefs.SetFloat("BestTime", bestTime);
+            PlayerPrefs.Save();
+
+            LoadBestTime(); // Update the UI
+        }
+    }
+
+    // reset best time button
+    public void ResetBestTime()
+    {
+        PlayerPrefs.DeleteKey("BestTime");
+        bestTime = 0;
+        LoadBestTime();
+    }
+    #endregion
 
     // Call this function from your PLAY BUTTON
     public void StartGame()
@@ -191,7 +236,16 @@ public class GameManager : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        if(message == "You Win!") timerText.color = Color.cyan;
+        if (message == "You Win!")
+        {
+            timerText.color = Color.cyan;
+            SaveBestTime();
+
+            if (bestTime == elapsedTime && bestTime > 0)
+            {
+                endGameText.text = "You Win! NEW RECORD!";
+            }
+        }
         if(message == "You Lose!") timerText.color = Color.red;
     }
 }

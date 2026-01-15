@@ -15,9 +15,11 @@ public class SettingsMenu : MonoBehaviour
     private void Start()
     {
         LoadVolume();
+        LoadFullscreen();
+        LoadQuality();
 
         // Load saved values or default to 1 (Max volume)
-        
+
         //float masterVal = PlayerPrefs.GetFloat("MasterVol", 1f);
         //float ambienceVal = PlayerPrefs.GetFloat("AmbienceVol", 1f);
         //float sfxVal = PlayerPrefs.GetFloat("SFXVol", 0.5f);
@@ -36,48 +38,68 @@ public class SettingsMenu : MonoBehaviour
     public void SetMasterVolume(float volume)
     {
         audioMixer.SetFloat("MasterVol", volume);
+        PlayerPrefs.SetFloat("MasterVol", volume);
+        PlayerPrefs.Save();
     }
 
     public void SetAmbienceVolume(float volume)
     {
         audioMixer.SetFloat("AmbienceVol", volume);
+        PlayerPrefs.SetFloat("AmbienceVol", volume);
+        PlayerPrefs.Save();
     }
 
     public void SetSFXVolume(float volume)
     {
         audioMixer.SetFloat("SFXVol", volume);
+        PlayerPrefs.SetFloat("SFXVol", volume);
+        PlayerPrefs.Save();
 
-    }
-
-    public void SaveVolume() // saves the values when I press X
-    {
-        audioMixer.GetFloat("MasterVol", out float masterVolume);
-        audioMixer.SetFloat("MasterVol", masterVolume);
-
-        audioMixer.GetFloat("AmbienceVol", out float ambienceVolume);
-        audioMixer.SetFloat("AmbienceVol", ambienceVolume);
-
-        audioMixer.GetFloat("SFXVol", out float sfxVolume);
-        audioMixer.SetFloat("SFXVol", sfxVolume);
     }
 
     public void LoadVolume()
     {
-        // PlayerPrefs is a class that stores Player preferences between game sessions.
-        masterSlider.value = PlayerPrefs.GetFloat("MasterVol");
-        ambienceSlider.value = PlayerPrefs.GetFloat("AmbienceVol");
-        sfxSlider.value = PlayerPrefs.GetFloat("SFXVol");
+        // Load saved values or default to 0 (middle value for mixer, usually 0dB)
+        float masterVol = PlayerPrefs.GetFloat("MasterVol", 0f);
+        float ambienceVol = PlayerPrefs.GetFloat("AmbienceVol", 0f);
+        float sfxVol = PlayerPrefs.GetFloat("SFXVol", 0f);
+
+        // Update sliders
+        masterSlider.value = masterVol;
+        ambienceSlider.value = ambienceVol;
+        sfxSlider.value = sfxVol;
+
+        // Apply to mixer
+        audioMixer.SetFloat("MasterVol", masterVol);
+        audioMixer.SetFloat("AmbienceVol", ambienceVol);
+        audioMixer.SetFloat("SFXVol", sfxVol);
     }
 
     #region FULL SCREEN
     public void SetFullscreen(bool isFullscreen)
     {
         Screen.fullScreen = isFullscreen;
+        PlayerPrefs.SetInt("Fullscreen", isFullscreen ? 1 : 0);
+        PlayerPrefs.Save();
+    }
+
+    private void LoadFullscreen()
+    {
+        int isFullscreen = PlayerPrefs.GetInt("Fullscreen", 1);
+        Screen.fullScreen = (isFullscreen == 1);
     }
     #endregion
 
     public void SetQuality(int qualityIndex)
     {
         QualitySettings.SetQualityLevel(qualityIndex);
+        PlayerPrefs.SetInt("QualityLevel", qualityIndex);
+        PlayerPrefs.Save();
+    }
+
+    private void LoadQuality()
+    {
+        int quality = PlayerPrefs.GetInt("QualityLevel", 2); // Default to medium quality
+        QualitySettings.SetQualityLevel(quality);
     }
 }
