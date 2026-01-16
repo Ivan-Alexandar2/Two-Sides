@@ -21,12 +21,6 @@ public class GameManager : MonoBehaviour
 
     public BoatController boat;
 
-    [Header("End Screens")]
-    [SerializeField] private GameObject winPanel;
-    [SerializeField] private GameObject losePanel;
-    [SerializeField] private TextMeshProUGUI loseText;
-    [SerializeField] private TextMeshProUGUI winText;
-
     [Header("Timer")]
     public TextMeshProUGUI timerText;
     public TextMeshProUGUI bestTimeText;
@@ -45,8 +39,7 @@ public class GameManager : MonoBehaviour
         PeopleOnRightBank = 3;
         KillersOnRightBank = 3;
 
-        winPanel.SetActive(false);
-        losePanel.SetActive(false);
+        LoadBestTime();
     }
 
     void Update()
@@ -166,7 +159,7 @@ public class GameManager : MonoBehaviour
             }
             else
             {
-                bestTimeText.text = "Best: --:--";
+                bestTimeText.text = "--:--";
             }
         }
     }

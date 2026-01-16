@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.UI;
@@ -12,27 +13,14 @@ public class SettingsMenu : MonoBehaviour
     public Slider ambienceSlider;
     public Slider sfxSlider;
 
+    public Toggle fullscreenToggle;
+    public TMP_Dropdown qualityDropdown;
+
     private void Start()
     {
         LoadVolume();
         LoadFullscreen();
         LoadQuality();
-
-        // Load saved values or default to 1 (Max volume)
-
-        //float masterVal = PlayerPrefs.GetFloat("MasterVol", 1f);
-        //float ambienceVal = PlayerPrefs.GetFloat("AmbienceVol", 1f);
-        //float sfxVal = PlayerPrefs.GetFloat("SFXVol", 0.5f);
-
-        // Update the sliders visually
-        //masterSlider.value = masterVal;
-        //ambienceSlider.value = ambienceVal;
-        //sfxSlider.value = sfxVal;
-
-        // Apply the volume immediately
-        // SetMasterVolume(masterVal);
-        //SetAmbienceVolume(ambienceVal);
-        //SetSFXVolume(sfxVal);
     }
 
     public void SetMasterVolume(float volume)
@@ -81,12 +69,15 @@ public class SettingsMenu : MonoBehaviour
         Screen.fullScreen = isFullscreen;
         PlayerPrefs.SetInt("Fullscreen", isFullscreen ? 1 : 0);
         PlayerPrefs.Save();
+
+        Debug.Log("Fullscreen saved as: " + (isFullscreen ? 1 : 0));
     }
 
     private void LoadFullscreen()
     {
         int isFullscreen = PlayerPrefs.GetInt("Fullscreen", 1);
         Screen.fullScreen = (isFullscreen == 1);
+        fullscreenToggle.isOn = (isFullscreen == 1);
     }
     #endregion
 
@@ -101,5 +92,6 @@ public class SettingsMenu : MonoBehaviour
     {
         int quality = PlayerPrefs.GetInt("QualityLevel", 2); // Default to medium quality
         QualitySettings.SetQualityLevel(quality);
+        qualityDropdown.value = quality;
     }
 }
